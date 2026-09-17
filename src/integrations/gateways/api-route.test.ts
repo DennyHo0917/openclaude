@@ -32,11 +32,6 @@ test('API Route uses a dedicated hybrid OpenAI-compatible gateway contract', () 
   expect(gateway.catalog?.discovery?.requiresAuth).toBe(true)
   expect(gateway.catalog?.models?.map(model => model.apiName)).toEqual([
     'claude-sonnet-4-6',
-    'claude-haiku-4-5',
-    'gpt-4o-mini',
-    'gemini-2.5-pro',
-    'deepseek-chat',
-    'qwen-max',
   ])
 })
 
@@ -57,6 +52,23 @@ test('API Route preset uses the existing generic profile path', () => {
     provider: 'api-route',
     routeId: 'api-route',
   })
+  expect(
+    getProviderPresetUiMetadata('api-route', {
+      API_ROUTE_API_KEY: 'test-api-route-key',
+      API_ROUTE_MODEL: 'custom-api-route-model',
+      OPENAI_MODEL: 'custom-openai-model',
+    }),
+  ).toMatchObject({
+    model: 'custom-api-route-model',
+  })
+  expect(
+    getProviderPresetUiMetadata('api-route', {
+      API_ROUTE_API_KEY: 'test-api-route-key',
+      OPENAI_MODEL: 'custom-openai-model',
+    }),
+  ).toMatchObject({
+    model: 'custom-openai-model',
+  })
 })
 
 test('API Route dedicated credentials require the canonical inference URL', () => {
@@ -69,6 +81,14 @@ test('API Route dedicated credentials require the canonical inference URL', () =
       processEnv: env,
     }),
   ).toBe('secret-key')
+
+  expect(
+    resolveRouteCredentialValue({
+      routeId: 'api-route',
+      baseUrl: 'http://global.api-route.com/v1',
+      processEnv: env,
+    }),
+  ).toBeUndefined()
 
   expect(
     resolveRouteCredentialValue({
@@ -115,6 +135,9 @@ test('API Route discovery maps chat models and drops non-chat IDs', () => {
   expect(mapApiRouteModel({ id: 'text-embedding-3-small' })).toBeNull()
   expect(mapApiRouteModel({ id: 'whisper-1' })).toBeNull()
   expect(mapApiRouteModel({ id: 'dall-e-3' })).toBeNull()
+  expect(mapApiRouteModel({ id: 'gpt-image-1' })).toBeNull()
+  expect(mapApiRouteModel({ id: 'sora-turbo' })).toBeNull()
+  expect(mapApiRouteModel({ id: 'veo-2' })).toBeNull()
   expect(mapApiRouteModel(null)).toBeNull()
   expect(mapApiRouteModel({})).toBeNull()
 })

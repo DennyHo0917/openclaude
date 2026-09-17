@@ -1,7 +1,8 @@
 import { defineCatalog, defineGateway } from '../define.js'
 
 const NON_CHAT_MODEL_PATTERN =
-  /(embedding|embed|dall-e|whisper|tts|rerank|moderation|omni-moderation|audio)/i
+  /(embedding|embed|dall-e|whisper|tts|rerank|moderation|omni-moderation|audio|^gpt-image-|^sora-|^veo-)/i
+
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -61,51 +62,6 @@ const curatedModels = [
     modelDescriptorId: 'claude-sonnet-4-6',
     label: 'Claude Sonnet 4.6',
     contextWindow: 200_000,
-    maxOutputTokens: 8_192,
-  },
-  {
-    id: 'claude-haiku-4-5',
-    apiName: 'claude-haiku-4-5',
-    aliases: ['haiku-4.5', 'claude-haiku'],
-    modelDescriptorId: 'claude-haiku-4-5',
-    label: 'Claude Haiku 4.5',
-    contextWindow: 200_000,
-    maxOutputTokens: 8_192,
-  },
-  {
-    id: 'gpt-4o-mini',
-    apiName: 'gpt-4o-mini',
-    aliases: ['4o-mini'],
-    modelDescriptorId: 'gpt-4o-mini',
-    label: 'GPT-4o Mini',
-    contextWindow: 128_000,
-    maxOutputTokens: 16_384,
-  },
-  {
-    id: 'gemini-2.5-pro',
-    apiName: 'gemini-2.5-pro',
-    aliases: ['gemini-pro'],
-    modelDescriptorId: 'gemini-2.5-pro',
-    label: 'Gemini 2.5 Pro',
-    contextWindow: 1_048_576,
-    maxOutputTokens: 8_192,
-  },
-  {
-    id: 'deepseek-chat',
-    apiName: 'deepseek-chat',
-    aliases: ['deepseek-v3'],
-    modelDescriptorId: 'deepseek-chat',
-    label: 'DeepSeek Chat',
-    contextWindow: 64_000,
-    maxOutputTokens: 8_192,
-  },
-  {
-    id: 'qwen-max',
-    apiName: 'qwen-max',
-    aliases: ['qwen'],
-    modelDescriptorId: 'qwen-max',
-    label: 'Qwen Max',
-    contextWindow: 131_072,
     maxOutputTokens: 8_192,
   },
 ]
