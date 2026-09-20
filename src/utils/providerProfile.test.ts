@@ -3424,6 +3424,50 @@ test('buildStartupEnvFromProfile preserves Concentrate env-only setup over a sav
   assert.equal(resolveActiveRouteIdFromEnv(env), 'concentrate')
 })
 
+test('applyStartupEnvFromProfile preserves API Route env-only setup over a saved profile', async () => {
+  const processEnv: NodeJS.ProcessEnv = {
+    API_ROUTE_API_KEY: 'api-route-env-only-key',
+    API_ROUTE_MODEL: 'api-route-env-only-model',
+  }
+
+  const error = await applyStartupEnvFromProfile({
+    persisted: profile('openai', {
+      OPENAI_BASE_URL: 'https://api.openai.com/v1',
+      OPENAI_MODEL: 'gpt-4o',
+      OPENAI_API_KEY: 'sk-persisted',
+    }),
+    processEnv,
+  })
+
+  assert.equal(error, null)
+  assert.equal(processEnv.API_ROUTE_API_KEY, 'api-route-env-only-key')
+  assert.equal(processEnv.API_ROUTE_MODEL, 'api-route-env-only-model')
+  assert.equal(processEnv.OPENAI_BASE_URL, undefined)
+  assert.equal(processEnv.OPENAI_API_KEY, undefined)
+  assert.equal(resolveActiveRouteIdFromEnv(processEnv), 'api-route')
+})
+
+test('applyStartupEnvFromProfile preserves API Route key-only descriptor-default intent', async () => {
+  const processEnv: NodeJS.ProcessEnv = {
+    API_ROUTE_API_KEY: 'api-route-env-only-key',
+  }
+
+  const error = await applyStartupEnvFromProfile({
+    persisted: profile('openai', {
+      OPENAI_BASE_URL: 'https://api.openai.com/v1',
+      OPENAI_MODEL: 'gpt-4o',
+      OPENAI_API_KEY: 'sk-persisted',
+    }),
+    processEnv,
+  })
+
+  assert.equal(error, null)
+  assert.equal(processEnv.API_ROUTE_API_KEY, 'api-route-env-only-key')
+  assert.equal(processEnv.OPENAI_MODEL, undefined)
+  assert.equal(resolveActiveRouteIdFromEnv(processEnv), 'api-route')
+  assert.equal(await getProviderValidationError(processEnv), null)
+})
+
 test('buildConcentrateProfileEnv prefers CONCENTRATE_MODEL over OPENAI_MODEL', () => {
   const env = buildConcentrateProfileEnv({
     apiKey: 'concentrate-secret-key',
