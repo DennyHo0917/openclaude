@@ -314,6 +314,33 @@ describe('loadEnvFile', () => {
     })
   })
 
+  it('preserves existing API Route env values over provider env-file values', () => {
+    process.env.API_ROUTE_API_KEY = 'shell-api-route-key'
+    process.env.API_ROUTE_MODEL = 'shell-api-route-model'
+    const filePath = writeTempEnvFile([
+      'API_ROUTE_API_KEY=file-api-route-key',
+      'API_ROUTE_MODEL=file-api-route-model',
+    ].join('\n'))
+
+    const loaded = loadEnvFile(filePath)
+
+    expect(process.env.API_ROUTE_API_KEY).toBe('shell-api-route-key')
+    expect(process.env.API_ROUTE_MODEL).toBe('shell-api-route-model')
+    expect(loaded).toEqual({})
+  })
+
+  it('rejects API Route env files atomically when any variable is unsupported', () => {
+    const filePath = writeTempEnvFile([
+      'API_ROUTE_API_KEY=api-route-key',
+      'UNSAFE_API_ROUTE_SETTING=blocked',
+    ].join('\n'))
+
+    expect(() => loadEnvFile(filePath)).toThrow(
+      'Unsupported variable UNSAFE_API_ROUTE_SETTING in --provider-env-file',
+    )
+    expect(process.env.API_ROUTE_API_KEY).toBeUndefined()
+  })
+
   it('loads the dedicated LLMTR credential without selecting a route', () => {
     const filePath = writeTempEnvFile('LLMTR_API_KEY=llmtr-key')
 
