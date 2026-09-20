@@ -481,6 +481,16 @@ test.each(['SUA_CHAVE', 'sua_chave', 'null', 'undefined', ' NULL '])(
   },
 )
 
+test('API Route saved generic profile credential validates on the canonical endpoint', async () => {
+  process.env.CLAUDE_CODE_USE_OPENAI = '1'
+  process.env.OPENAI_BASE_URL = 'https://global.api-route.com/v1'
+  process.env.OPENAI_MODEL = 'saved-model'
+  process.env.OPENAI_API_KEY = 'saved-profile-key'
+  delete process.env.API_ROUTE_API_KEY
+
+  await expect(getProviderValidationError(process.env)).resolves.toBeNull()
+})
+
 test('API Route key-only setup validates before client defaults are applied', async () => {
   process.env.API_ROUTE_API_KEY = 'api-route-key'
 
