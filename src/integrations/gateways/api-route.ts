@@ -90,7 +90,7 @@ export default defineGateway({
     requiresAuth: true,
     authMode: 'api-key',
     credentialEnvVars: ['API_ROUTE_API_KEY'],
-    dedicatedCredentialsOnly: true,
+    dedicatedCredentialsOnly: false,
   },
   startup: {
     probeReadiness: 'openai-compatible-models',
@@ -116,7 +116,7 @@ export default defineGateway({
       matchDefaultBaseUrl: true,
       matchBaseUrlHosts: ['global.api-route.com'],
     },
-    credentialEnvVars: ['API_ROUTE_API_KEY'],
+    credentialEnvVars: ['API_ROUTE_API_KEY', 'OPENAI_API_KEYS', 'OPENAI_API_KEY'],
     missingCredentialMessage:
       'API Route auth is required. Set API_ROUTE_API_KEY.',
   },
