@@ -118,6 +118,8 @@ const PROFILE_ENV_KEYS = [
   'ATLAS_CLOUD_API_KEY',
   'APISMART_API_KEY',
   'APISMART_MODEL',
+  'API_ROUTE_API_KEY',
+  'API_ROUTE_MODEL',
   'NEARAI_API_KEY',
   'FIREWORKS_API_KEY',
   'LONGCAT_API_KEY',
@@ -1490,6 +1492,7 @@ function hasConcreteProviderSelection(
   // before the env-only resolver has a chance to see it.
   return (
     sanitizeApiKey(processEnv.APISMART_API_KEY) !== undefined ||
+    sanitizeApiKey(processEnv.API_ROUTE_API_KEY) !== undefined ||
     sanitizeApiKey(processEnv.FIREWORKS_API_KEY) !== undefined ||
     sanitizeApiKey(processEnv.NEARAI_API_KEY) !== undefined ||
     sanitizeApiKey(processEnv.LONGCAT_API_KEY) !== undefined ||
