@@ -13,12 +13,12 @@ test('API Route uses a dedicated hybrid OpenAI-compatible gateway contract', () 
   expect(gateway.defaultBaseUrl).toBe('https://global.api-route.com/v1')
   expect(gateway.defaultModel).toBe('claude-sonnet-4-6')
   expect(gateway.setup.credentialEnvVars).toEqual(['API_ROUTE_API_KEY'])
-  expect(gateway.setup.dedicatedCredentialsOnly).toBe(true)
+  expect(gateway.setup.dedicatedCredentialsOnly).toBe(false)
   expect(gateway.preset?.apiKeyEnvVars).toEqual(['API_ROUTE_API_KEY'])
   expect(gateway.validation).toMatchObject({
     kind: 'credential-env',
     routing: { matchDefaultBaseUrl: true },
-    credentialEnvVars: ['API_ROUTE_API_KEY'],
+    credentialEnvVars: ['API_ROUTE_API_KEY', 'OPENAI_API_KEYS', 'OPENAI_API_KEY'],
   })
   expect(gateway.transportConfig).toEqual({
     kind: 'openai-compatible',
