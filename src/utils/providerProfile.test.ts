@@ -3402,6 +3402,37 @@ test('openai launch removes legacy generic credentials from a noncanonical Conce
   }
 })
 
+test('API Route saved profile relaunch uses persisted generic key/model over ambient dedicated state', async () => {
+  const env = await buildLaunchEnv({
+    profile: 'openai',
+    persisted: profile('openai', {
+      CLAUDE_CODE_PROVIDER_ROUTE_ID: 'api-route',
+      OPENAI_BASE_URL: 'https://global.api-route.com/v1',
+      OPENAI_MODEL: 'saved-api-route-model',
+      OPENAI_API_KEY: 'saved-api-route-key',
+    }),
+    goal: 'balanced',
+    processEnv: {
+      API_ROUTE_API_KEY: 'ambient-api-route-key',
+      API_ROUTE_MODEL: 'ambient-api-route-model',
+    },
+  })
+
+  assert.equal(env.API_ROUTE_API_KEY, undefined)
+  assert.equal(env.API_ROUTE_MODEL, undefined)
+  assert.equal(env.OPENAI_BASE_URL, 'https://global.api-route.com/v1')
+  assert.equal(env.OPENAI_MODEL, 'saved-api-route-model')
+  assert.equal(env.OPENAI_API_KEY, 'saved-api-route-key')
+  assert.equal(
+    resolveRouteCredentialValue({
+      routeId: 'api-route',
+      baseUrl: env.OPENAI_BASE_URL,
+      processEnv: env,
+    }),
+    'saved-api-route-key',
+  )
+})
+
 test('buildStartupEnvFromProfile preserves Concentrate env-only setup over a saved profile', async () => {
   const env = await buildStartupEnvFromProfile({
     persisted: profile('openai', {
