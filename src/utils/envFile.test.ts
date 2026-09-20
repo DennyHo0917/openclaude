@@ -24,6 +24,8 @@ const TEST_ENV_KEYS = [
   'COMMAND_CODE_API_KEY',
   'APISMART_API_KEY',
   'APISMART_MODEL',
+  'API_ROUTE_API_KEY',
+  'API_ROUTE_MODEL',
   'OPENAI_API_KEYS',
   'OPENAI_API_KEY',
   'OPENAI_AZURE_STYLE',
@@ -293,6 +295,22 @@ describe('loadEnvFile', () => {
     expect(loaded).toEqual({
       APISMART_API_KEY: 'apismart-key',
       APISMART_MODEL: 'KIMI_K3',
+    })
+  })
+
+  it('loads documented API Route env-only provider setup values', () => {
+    const filePath = writeTempEnvFile([
+      'API_ROUTE_API_KEY=api-route-key',
+      'API_ROUTE_MODEL=claude-sonnet-4-6',
+    ].join('\n'))
+
+    const loaded = loadEnvFile(filePath)
+
+    expect(process.env.API_ROUTE_API_KEY).toBe('api-route-key')
+    expect(process.env.API_ROUTE_MODEL).toBe('claude-sonnet-4-6')
+    expect(loaded).toEqual({
+      API_ROUTE_API_KEY: 'api-route-key',
+      API_ROUTE_MODEL: 'claude-sonnet-4-6',
     })
   })
 
