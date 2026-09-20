@@ -936,6 +936,8 @@ test('routes env-only API Route requests through the OpenAI-compatible shim', as
 })
 
 test('env-only API Route setup withholds its key from a noncanonical URL', async () => {
+  let capturedHeaders: Headers | undefined
+
   delete process.env.CLAUDE_CODE_USE_GEMINI
   delete process.env.GEMINI_API_KEY
   delete process.env.GEMINI_MODEL
@@ -944,8 +946,47 @@ test('env-only API Route setup withholds its key from a noncanonical URL', async
   process.env.API_ROUTE_API_KEY = 'api-route-test-key'
   process.env.OPENAI_BASE_URL = 'https://global.api-route.com/v1/models'
 
-  await getAnthropicClient({ maxRetries: 0, model: 'claude-sonnet-4-6' })
+  globalThis.fetch = (async (_input, init) => {
+    capturedHeaders = new Headers(init?.headers)
 
+    return new Response(
+      JSON.stringify({
+        id: 'chatcmpl-api-route-noncanonical',
+        model: 'claude-sonnet-4-6',
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: 'api-route noncanonical ok',
+            },
+            finish_reason: 'stop',
+          },
+        ],
+        usage: {
+          prompt_tokens: 8,
+          completion_tokens: 3,
+          total_tokens: 11,
+        },
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    )
+  }) as typeof fetch
+
+  const client = await getAnthropicClient({
+    maxRetries: 0,
+    model: 'claude-sonnet-4-6',
+  })
+  await client.messages.create({
+    max_tokens: 64,
+    messages: [{ role: 'user', content: 'hello' }],
+    model: 'claude-sonnet-4-6',
+  })
+
+  expect(capturedHeaders?.get('authorization')).toBeNull()
   expect(process.env.CLAUDE_CODE_USE_OPENAI).toBe('1')
   expect(process.env.OPENAI_BASE_URL).toBe(
     'https://global.api-route.com/v1/models',
