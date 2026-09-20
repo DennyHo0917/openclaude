@@ -73,6 +73,8 @@ const RESTORED_KEYS = [
   'ATLAS_CLOUD_API_KEY',
   'APISMART_API_KEY',
   'APISMART_MODEL',
+  'API_ROUTE_API_KEY',
+  'API_ROUTE_MODEL',
   'LLMTR_API_KEY',
   'CMD_API_KEY',
   'COMMANDCODE_API_KEY',
@@ -368,6 +370,57 @@ describe('applyProviderProfileToProcessEnv', () => {
         processEnv: process.env,
       }),
     ).toBe('selected-new')
+  }, 20_000)
+
+  test('API Route saved profile clears competing dedicated env and uses its saved key/model', async () => {
+    const { applyProviderProfileToProcessEnv } =
+      await importFreshProviderProfileModules()
+    process.env.API_ROUTE_API_KEY = 'ambient-api-route-key'
+    process.env.API_ROUTE_MODEL = 'ambient-api-route-model'
+
+    applyProviderProfileToProcessEnv(
+      buildProfile({
+        provider: 'api-route',
+        name: 'API Route',
+        baseUrl: 'https://global.api-route.com/v1',
+        model: 'saved-api-route-model',
+        apiKey: 'saved-api-route-key',
+      }),
+    )
+
+    expect(process.env.API_ROUTE_API_KEY).toBeUndefined()
+    expect(process.env.API_ROUTE_MODEL).toBeUndefined()
+    expect(process.env.OPENAI_API_KEY).toBe('saved-api-route-key')
+    expect(process.env.OPENAI_MODEL).toBe('saved-api-route-model')
+    expect(
+      resolveRouteCredentialValue({
+        routeId: 'api-route',
+        baseUrl: process.env.OPENAI_BASE_URL,
+        processEnv: process.env,
+      }),
+    ).toBe('saved-api-route-key')
+  }, 20_000)
+
+  test('switching away from API Route clears dedicated route state', async () => {
+    const { applyProviderProfileToProcessEnv } =
+      await importFreshProviderProfileModules()
+    process.env.API_ROUTE_API_KEY = 'ambient-api-route-key'
+    process.env.API_ROUTE_MODEL = 'ambient-api-route-model'
+
+    applyProviderProfileToProcessEnv(
+      buildProfile({
+        provider: 'anthropic',
+        name: 'Anthropic',
+        baseUrl: 'https://api.anthropic.com',
+        model: 'claude-sonnet-4-6',
+        apiKey: 'anthropic-key',
+      }),
+    )
+
+    expect(process.env.API_ROUTE_API_KEY).toBeUndefined()
+    expect(process.env.API_ROUTE_MODEL).toBeUndefined()
+    expect(process.env.OPENAI_API_KEY).toBeUndefined()
+    expect(process.env.ANTHROPIC_API_KEY).toBe('anthropic-key')
   }, 20_000)
 
   test('keyless canonical LLMTR profile adopts its ambient dedicated key', async () => {
