@@ -71,7 +71,23 @@ test('API Route preset uses the existing generic profile path', () => {
   })
 })
 
-test('API Route dedicated credentials require the canonical inference URL', () => {
+test('API Route profile credentials use the generic fallback only on the canonical inference URL', () => {
+  expect(
+    resolveRouteCredentialValue({
+      routeId: 'api-route',
+      baseUrl: 'https://global.api-route.com/v1',
+      processEnv: { OPENAI_API_KEY: 'saved-profile-key' },
+    }),
+  ).toBe('saved-profile-key')
+
+  expect(
+    resolveRouteCredentialValue({
+      routeId: 'api-route',
+      baseUrl: 'https://proxy.example.com/v1',
+      processEnv: { OPENAI_API_KEY: 'saved-profile-key' },
+    }),
+  ).toBeUndefined()
+
   const env = { API_ROUTE_API_KEY: 'secret-key' }
 
   expect(
