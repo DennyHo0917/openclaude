@@ -372,6 +372,34 @@ describe('applyProviderProfileToProcessEnv', () => {
     ).toBe('selected-new')
   }, 20_000)
 
+  test('API Route saved profile uses the existing generic profile key/model contract', async () => {
+    const { applyProviderProfileToProcessEnv } =
+      await importFreshProviderProfileModules()
+
+    applyProviderProfileToProcessEnv(
+      buildProfile({
+        provider: 'api-route',
+        name: 'API Route',
+        baseUrl: 'https://global.api-route.com/v1',
+        model: 'saved-api-route-model',
+        apiKey: 'saved-api-route-key',
+      }),
+    )
+
+    expect(process.env.API_ROUTE_API_KEY).toBeUndefined()
+    expect(process.env.API_ROUTE_MODEL).toBeUndefined()
+    expect(process.env.OPENAI_BASE_URL).toBe('https://global.api-route.com/v1')
+    expect(process.env.OPENAI_API_KEY).toBe('saved-api-route-key')
+    expect(process.env.OPENAI_MODEL).toBe('saved-api-route-model')
+    expect(
+      resolveRouteCredentialValue({
+        routeId: 'api-route',
+        baseUrl: process.env.OPENAI_BASE_URL,
+        processEnv: process.env,
+      }),
+    ).toBe('saved-api-route-key')
+  }, 20_000)
+
   test('API Route saved profile clears competing dedicated env and uses its saved key/model', async () => {
     const { applyProviderProfileToProcessEnv } =
       await importFreshProviderProfileModules()
