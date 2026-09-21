@@ -943,8 +943,18 @@ export function applyProviderFlag(
           delete process.env.OPENAI_API_KEY
         }
       }
-      if (provider === 'api-route' && process.env.API_ROUTE_MODEL) {
-        process.env.OPENAI_MODEL = process.env.API_ROUTE_MODEL
+      if (provider === 'api-route') {
+        const apiRouteModel = usableProviderModelEnvValue(
+          process.env.API_ROUTE_MODEL,
+        )
+        if (apiRouteModel) {
+          process.env.OPENAI_MODEL = apiRouteModel
+        } else {
+          process.env.OPENAI_MODEL ??=
+            usableProviderModelEnvValue(process.env.OPENAI_MODEL) ||
+            defaultModel ||
+            'claude-sonnet-4-6'
+        }
       }
       if (defaultModel) {
         process.env.OPENAI_MODEL ??= defaultModel

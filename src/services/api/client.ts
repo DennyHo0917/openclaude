@@ -472,6 +472,7 @@ function applyApiRouteEnvOnlyDefaults(): void {
     process.env.OPENAI_API_KEY = apiKey
   } else {
     delete process.env.OPENAI_API_KEY
+    delete process.env.OPENAI_API_KEYS
   }
   delete process.env.OPENAI_API_FORMAT
   delete process.env.OPENAI_AZURE_STYLE

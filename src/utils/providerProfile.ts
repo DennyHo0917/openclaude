@@ -25,6 +25,7 @@ import { getErrnoCode } from './errors.js'
 import {
   getRouteDefaultBaseUrl,
   getRouteDefaultModel,
+  isCanonicalApiRouteInferenceBaseUrl,
   isCanonicalApismartInferenceBaseUrl,
   isCanonicalConcentrateInferenceBaseUrl,
   isCanonicalLlmtrInferenceBaseUrl,
@@ -2182,12 +2183,17 @@ export async function buildLaunchEnv(options: {
     effectiveOpenAIRouteId === 'commandcode' &&
     !!env.OPENAI_BASE_URL?.trim() &&
     !isCanonicalCommandcodeInferenceBaseUrl(env.OPENAI_BASE_URL)
+  const isNoncanonicalApiRouteLaunch =
+    effectiveOpenAIRouteId === 'api-route' &&
+    !!env.OPENAI_BASE_URL?.trim() &&
+    !isCanonicalApiRouteInferenceBaseUrl(env.OPENAI_BASE_URL)
   const isNoncanonicalDedicatedOpenAILaunch =
     isNoncanonicalAimlapiLaunch ||
     isNoncanonicalApismartLaunch ||
     isNoncanonicalConcentrateLaunch ||
     isNoncanonicalLlmtrLaunch ||
-    isNoncanonicalCommandcodeLaunch
+    isNoncanonicalCommandcodeLaunch ||
+    isNoncanonicalApiRouteLaunch
   if (isNoncanonicalDedicatedOpenAILaunch) {
     delete env.OPENAI_API_KEY
     delete env.OPENAI_API_KEYS
@@ -2511,12 +2517,18 @@ export async function buildStartupEnvFromProfile(options?: {
     persisted.env.CLAUDE_CODE_PROVIDER_ROUTE_ID === 'commandcode' &&
     !!persisted.env.OPENAI_BASE_URL?.trim() &&
     !isCanonicalCommandcodeInferenceBaseUrl(persisted.env.OPENAI_BASE_URL)
+  const persistedApiRouteProxy =
+    persisted?.profile === 'openai' &&
+    persisted.env.CLAUDE_CODE_PROVIDER_ROUTE_ID === 'api-route' &&
+    !!persisted.env.OPENAI_BASE_URL?.trim() &&
+    !isCanonicalApiRouteInferenceBaseUrl(persisted.env.OPENAI_BASE_URL)
   if (
     hasConcreteProviderSelection(processEnv) &&
     !persistedApismartProxy &&
     !persistedConcentrateProxy &&
     !persistedLlmtrProxy &&
-    !persistedCommandcodeProxy
+    !persistedCommandcodeProxy &&
+    !persistedApiRouteProxy
   ) {
     return processEnv
   }

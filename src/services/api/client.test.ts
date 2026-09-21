@@ -945,6 +945,7 @@ test('env-only API Route setup withholds its key from a noncanonical URL', async
   delete process.env.GEMINI_AUTH_MODE
   process.env.API_ROUTE_API_KEY = 'api-route-test-key'
   process.env.OPENAI_BASE_URL = 'https://global.api-route.com/v1/models'
+  process.env.OPENAI_API_KEYS = 'ambient-key-pool-1,ambient-key-pool-2'
 
   globalThis.fetch = (async (_input, init) => {
     capturedHeaders = new Headers(init?.headers)
@@ -992,6 +993,7 @@ test('env-only API Route setup withholds its key from a noncanonical URL', async
     'https://global.api-route.com/v1/models',
   )
   expect(process.env.OPENAI_API_KEY).toBeUndefined()
+  expect(process.env.OPENAI_API_KEYS).toBeUndefined()
 })
 
 test('routes env-only Concentrate requests through the OpenAI-compatible shim', async () => {

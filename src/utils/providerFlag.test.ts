@@ -1884,6 +1884,18 @@ describe('applyProviderFlag - api-route', () => {
     expect(process.env.OPENAI_MODEL).toBe('flag-model')
   })
 
+  test.each(['', '   ', 'null', 'undefined', ' NULL '])(
+    'does not contaminate OPENAI_MODEL with unusable API_ROUTE_MODEL %j',
+    placeholder => {
+      process.env.API_ROUTE_API_KEY = 'api-route-secret-key'
+      process.env.API_ROUTE_MODEL = placeholder
+
+      applyProviderFlag('api-route', [])
+
+      expect(process.env.OPENAI_MODEL).toBe('claude-sonnet-4-6')
+    },
+  )
+
   test('does not forward the dedicated key to a preserved custom base URL', () => {
     process.env.API_ROUTE_API_KEY = 'api-route-secret-key'
     process.env.OPENAI_BASE_URL = 'https://custom-proxy.example.com/v1'
