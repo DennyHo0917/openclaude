@@ -470,6 +470,7 @@ function applyApiRouteEnvOnlyDefaults(): void {
     isCanonicalApiRouteInferenceBaseUrl(process.env.OPENAI_BASE_URL)
   ) {
     process.env.OPENAI_API_KEY = apiKey
+    delete process.env.OPENAI_API_KEYS
   } else {
     delete process.env.OPENAI_API_KEY
     delete process.env.OPENAI_API_KEYS

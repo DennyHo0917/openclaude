@@ -1917,6 +1917,16 @@ describe('applyProviderFlag - api-route', () => {
     expect(process.env.OPENAI_API_KEY).toBe('api-route-secret-key')
   })
 
+  test('clears OPENAI_API_KEYS when dedicated API Route key is set on canonical endpoint', () => {
+    process.env.API_ROUTE_API_KEY = 'api-route-secret-key'
+    process.env.OPENAI_API_KEYS = 'stale-key-1,stale-key-2'
+
+    applyProviderFlag('api-route', [])
+
+    expect(process.env.OPENAI_API_KEY).toBe('api-route-secret-key')
+    expect(process.env.OPENAI_API_KEYS).toBeUndefined()
+  })
+
   test('clears a stale OPENAI_API_KEY when no API Route key is set', () => {
     delete process.env.API_ROUTE_API_KEY
     process.env.OPENAI_API_KEY = 'existing-openai-key'

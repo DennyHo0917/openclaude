@@ -935,6 +935,66 @@ test('routes env-only API Route requests through the OpenAI-compatible shim', as
   expect(process.env.OPENAI_MODEL).toBe('claude-sonnet-4-6')
 })
 
+test('env-only API Route setup prefers API_ROUTE_API_KEY over stale OPENAI_API_KEYS pool', async () => {
+  let capturedHeaders: Headers | undefined
+
+  delete process.env.CLAUDE_CODE_USE_GEMINI
+  delete process.env.GEMINI_API_KEY
+  delete process.env.GEMINI_MODEL
+  delete process.env.GEMINI_BASE_URL
+  delete process.env.GEMINI_AUTH_MODE
+  process.env.API_ROUTE_API_KEY = 'api-route-correct-key'
+  process.env.OPENAI_API_KEYS = 'stale-key-1,stale-key-2'
+  process.env.OPENAI_BASE_URL = 'https://global.api-route.com/v1'
+
+  globalThis.fetch = (async (_input, init) => {
+    capturedHeaders = new Headers(init?.headers)
+
+    return new Response(
+      JSON.stringify({
+        id: 'chatcmpl-api-route-precedence',
+        model: 'claude-sonnet-4-6',
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: 'api-route ok',
+            },
+            finish_reason: 'stop',
+          },
+        ],
+        usage: {
+          prompt_tokens: 8,
+          completion_tokens: 3,
+          total_tokens: 11,
+        },
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    )
+  }) as typeof fetch
+
+  const client = await getAnthropicClient({
+    maxRetries: 0,
+    model: 'claude-sonnet-4-6',
+  })
+  await client.messages.create({
+    max_tokens: 64,
+    messages: [{ role: 'user', content: 'hello' }],
+    model: 'claude-sonnet-4-6',
+  })
+
+  expect(capturedHeaders?.get('authorization')).toBe(
+    'Bearer api-route-correct-key',
+  )
+  expect(capturedHeaders?.get('authorization')).not.toContain('stale-key')
+  expect(process.env.OPENAI_API_KEYS).toBeUndefined()
+  expect(process.env.OPENAI_API_KEY).toBe('api-route-correct-key')
+})
+
 test('env-only API Route setup withholds its key from a noncanonical URL', async () => {
   let capturedHeaders: Headers | undefined
 

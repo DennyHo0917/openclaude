@@ -939,6 +939,7 @@ export function applyProviderFlag(
           : undefined
         if (dedicatedApiRouteKey) {
           process.env.OPENAI_API_KEY = dedicatedApiRouteKey
+          delete process.env.OPENAI_API_KEYS
         } else {
           delete process.env.OPENAI_API_KEY
         }
