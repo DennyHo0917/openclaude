@@ -222,6 +222,7 @@ export type ProfileEnv = {
   MIMO_API_KEY?: string
   ATLAS_CLOUD_API_KEY?: string
   APISMART_API_KEY?: string
+  API_ROUTE_API_KEY?: string
   CLINE_API_KEY?: string
   NEARAI_API_KEY?: string
   FIREWORKS_API_KEY?: string

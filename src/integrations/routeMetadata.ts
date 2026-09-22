@@ -1094,6 +1094,8 @@ export function hasApiRouteEnvOnlyProviderIntent(
   return (
     hasUsableOpenAICredential(processEnv.API_ROUTE_API_KEY) &&
     !hasConflictingOpenAIBaseUrlForRoute(processEnv, isApiRouteBaseUrl) &&
+    !(processEnv.CLAUDE_CODE_USE_OPENAI !== undefined &&
+      !isEnvTruthy(processEnv.CLAUDE_CODE_USE_OPENAI)) &&
     hasNoExplicitNonOpenAIProvider(processEnv)
   )
 }

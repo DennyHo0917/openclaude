@@ -14,6 +14,7 @@ async function importFreshProvidersModule() {
 
 const originalEnv = { ...process.env }
 const originalCwd = process.cwd()
+const originalFetch = globalThis.fetch
 
 const RESTORED_KEYS = [
   'CLAUDE_CODE_PROVIDER_PROFILE_ENV_APPLIED',
@@ -138,6 +139,7 @@ afterEach(() => {
     }
 
     mock.restore()
+    globalThis.fetch = originalFetch
     mockConfigState = createMockConfigState()
     process.chdir(originalCwd)
     if (testConfigDir) {
@@ -299,6 +301,17 @@ function buildConcentrateProfile(overrides: Partial<ProviderProfile> = {}): Prov
   })
 }
 
+function buildApiRouteProfile(overrides: Partial<ProviderProfile> = {}): ProviderProfile {
+  return buildProfile({
+    provider: 'api-route',
+    name: 'API Route',
+    baseUrl: 'https://global.api-route.com/v1',
+    model: 'claude-sonnet-4-6',
+    apiKey: 'api-route-test-key',
+    ...overrides,
+  })
+}
+
 function buildLlmtrProfile(overrides: Partial<ProviderProfile> = {}): ProviderProfile {
   return buildProfile({
     provider: 'llmtr',
@@ -372,7 +385,7 @@ describe('applyProviderProfileToProcessEnv', () => {
     ).toBe('selected-new')
   }, 20_000)
 
-  test('API Route saved profile uses the existing generic profile key/model contract', async () => {
+  test('API Route saved profile mirrors its dedicated credential and route identity', async () => {
     const { applyProviderProfileToProcessEnv } =
       await importFreshProviderProfileModules()
 
@@ -386,8 +399,9 @@ describe('applyProviderProfileToProcessEnv', () => {
       }),
     )
 
-    expect(process.env.API_ROUTE_API_KEY).toBeUndefined()
+    expect(process.env.API_ROUTE_API_KEY).toBe('saved-api-route-key')
     expect(process.env.API_ROUTE_MODEL).toBeUndefined()
+    expect(process.env.CLAUDE_CODE_PROVIDER_ROUTE_ID).toBe('api-route')
     expect(process.env.OPENAI_BASE_URL).toBe('https://global.api-route.com/v1')
     expect(process.env.OPENAI_API_KEY).toBe('saved-api-route-key')
     expect(process.env.OPENAI_MODEL).toBe('saved-api-route-model')
@@ -416,8 +430,9 @@ describe('applyProviderProfileToProcessEnv', () => {
       }),
     )
 
-    expect(process.env.API_ROUTE_API_KEY).toBeUndefined()
+    expect(process.env.API_ROUTE_API_KEY).toBe('saved-api-route-key')
     expect(process.env.API_ROUTE_MODEL).toBeUndefined()
+    expect(process.env.CLAUDE_CODE_PROVIDER_ROUTE_ID).toBe('api-route')
     expect(process.env.OPENAI_API_KEY).toBe('saved-api-route-key')
     expect(process.env.OPENAI_MODEL).toBe('saved-api-route-model')
     expect(
@@ -449,6 +464,66 @@ describe('applyProviderProfileToProcessEnv', () => {
     expect(process.env.API_ROUTE_MODEL).toBeUndefined()
     expect(process.env.OPENAI_API_KEY).toBeUndefined()
     expect(process.env.ANTHROPIC_API_KEY).toBe('anthropic-key')
+  }, 20_000)
+
+  test('API Route profile without a base URL uses the canonical endpoint and ambient key', async () => {
+    const { applyProviderProfileToProcessEnv } =
+      await importFreshProviderProfileModules()
+    process.env.API_ROUTE_API_KEY = 'ambient-api-route-key'
+
+    applyProviderProfileToProcessEnv(
+      buildApiRouteProfile({ baseUrl: undefined, apiKey: undefined }),
+    )
+
+    expect(process.env.OPENAI_BASE_URL).toBe('https://global.api-route.com/v1')
+    expect(process.env.OPENAI_API_KEY).toBe('ambient-api-route-key')
+    expect(process.env.API_ROUTE_API_KEY).toBe('ambient-api-route-key')
+    expect(process.env.CLAUDE_CODE_PROVIDER_ROUTE_ID).toBe('api-route')
+  }, 20_000)
+
+  test('retargeted API Route profile withholds its dedicated credential and skips discovery', async () => {
+    const fetchMock = mock(() => Promise.resolve(new Response('{}')))
+    globalThis.fetch = fetchMock as unknown as typeof fetch
+    const { setActiveProviderProfile } = await importFreshProviderProfileModules()
+    const profile = buildApiRouteProfile({
+      id: 'api_route_proxy',
+      baseUrl: 'https://proxy.example/v1',
+    })
+    saveMockGlobalConfig(current => ({
+      ...current,
+      providerProfiles: [profile],
+    }))
+
+    setActiveProviderProfile(profile.id, { configDir: testConfigDir ?? undefined })
+    await Promise.resolve()
+
+    expect(process.env.OPENAI_API_KEY).toBeUndefined()
+    expect(process.env.API_ROUTE_API_KEY).toBeUndefined()
+    expect(process.env.CLAUDE_CODE_PROVIDER_ROUTE_ID).toBe('api-route')
+    expect(fetchMock).not.toHaveBeenCalled()
+
+    const persisted = JSON.parse(
+      readFileSync(join(testConfigDir!, '.openclaude-profile.json'), 'utf8'),
+    )
+    expect(persisted.env).toEqual({
+      CLAUDE_CODE_PROVIDER_ROUTE_ID: 'api-route',
+      OPENAI_BASE_URL: 'https://proxy.example/v1',
+      OPENAI_MODEL: 'claude-sonnet-4-6',
+    })
+
+    const { buildStartupEnvFromProfile } = await import(
+      `./providerProfile.js?ts=${Date.now()}-${Math.random()}`
+    )
+    const startupEnv = await buildStartupEnvFromProfile({
+      persisted,
+      processEnv: {
+        API_ROUTE_API_KEY: 'ambient-api-route-key',
+        OPENAI_API_KEY: 'ambient-api-route-key',
+      },
+    })
+    expect(startupEnv.CLAUDE_CODE_PROVIDER_ROUTE_ID).toBe('api-route')
+    expect(startupEnv.OPENAI_API_KEY).toBeUndefined()
+    expect(startupEnv.API_ROUTE_API_KEY).toBeUndefined()
   }, 20_000)
 
   test('keyless canonical LLMTR profile adopts its ambient dedicated key', async () => {
@@ -4330,6 +4405,60 @@ describe('setActiveProviderProfile', () => {
       expect(startupEnv.CLAUDE_CODE_PROVIDER_ROUTE_ID).toBe('concentrate')
       expect(startupEnv.CONCENTRATE_API_KEY).toBeUndefined()
       expect(startupEnv.OPENAI_API_KEY).toBeUndefined()
+    } finally {
+      process.chdir(originalCwd)
+      rmSync(tempDir, { recursive: true, force: true })
+      rmSync(configDir, { recursive: true, force: true })
+    }
+  })
+
+  test('keyed canonical API Route profiles persist and restart with route identity', async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'openclaude-provider-'))
+    const configDir = mkdtempSync(join(tmpdir(), 'openclaude-provider-config-'))
+    process.chdir(tempDir)
+    process.env.CLAUDE_CONFIG_DIR = configDir
+
+    try {
+      const { setActiveProviderProfile } =
+        await importFreshProviderProfileModules()
+      const apiRouteProfile = buildApiRouteProfile({
+        id: 'api_route_profile',
+      })
+      saveMockGlobalConfig(current => ({
+        ...current,
+        providerProfiles: [apiRouteProfile],
+      }))
+
+      setActiveProviderProfile(apiRouteProfile.id, { configDir })
+      const persisted = JSON.parse(
+        readFileSync(join(configDir, '.openclaude-profile.json'), 'utf8'),
+      )
+
+      expect(persisted.env).toMatchObject({
+        CLAUDE_CODE_PROVIDER_ROUTE_ID: 'api-route',
+        OPENAI_BASE_URL: 'https://global.api-route.com/v1',
+        OPENAI_API_KEY: 'api-route-test-key',
+        API_ROUTE_API_KEY: 'api-route-test-key',
+      })
+
+      const { buildStartupEnvFromProfile } = await import(
+        `./providerProfile.js?ts=${Date.now()}-${Math.random()}`
+      )
+      const startupEnv = await buildStartupEnvFromProfile({
+        persisted,
+        processEnv: {},
+      })
+
+      expect(startupEnv.CLAUDE_CODE_PROVIDER_ROUTE_ID).toBe('api-route')
+      expect(startupEnv.OPENAI_BASE_URL).toBe('https://global.api-route.com/v1')
+      expect(startupEnv.OPENAI_API_KEY).toBe('api-route-test-key')
+      expect(
+        resolveRouteCredentialValue({
+          routeId: 'api-route',
+          baseUrl: startupEnv.OPENAI_BASE_URL,
+          processEnv: startupEnv,
+        }),
+      ).toBe('api-route-test-key')
     } finally {
       process.chdir(originalCwd)
       rmSync(tempDir, { recursive: true, force: true })
